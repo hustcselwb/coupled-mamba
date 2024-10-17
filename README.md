@@ -9,5 +9,11 @@ We will promptly update with the latest paper link after submitting the camera-r
 We will release the code soon.Including the model,dataset,eval code. 
 
 ## dataset
+MU-MOSEI, CH_SIMS, CH_SIMSV2, BRCA, MM-IMDB, datasets link are here 
 
+## environment
+```
+pip install causal-conv1d>=1.4.0
+pip install mamba-ssm
+```
 
