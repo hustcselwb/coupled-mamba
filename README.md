@@ -6,7 +6,7 @@
 </div>
 
 ## Abstract
-![pipline]()
+![pipline](https://github.com/hustcselwb/coupled-mamba/blob/main/pipline.png)
 The core of multi-modal fusion is to leverage the complementary information from different modalities. Existing methods often rely on traditional neural architectures, which struggle to capture complex interactions between modalities. Recent advances in State Space Models (SSMs), such as the Mamba model, have shown promise for stronger fusion. Despite this, SSMs face challenges in fusing multiple modalities due to hardware parallelism constraints.
 
 To address this, we propose the Coupled SSM model, which links the state chains of multiple modalities while keeping intra-modality processes independent. Our model includes an inter-modal state transition mechanism, where the current state depends on both its own chain and neighboring chains' states from the previous time step. We also develop a global convolution kernel to support hardware parallelism.
