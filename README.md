@@ -20,7 +20,7 @@ We will promptly update with the latest paper link after submitting the camera-r
 We will release the code soon.Including the model,dataset,eval code. 
 
 ## Dataset
-[CMU-MOSEI](https://aclanthology.org/P18-1208.pdf), [CH_SIMS](https://aclanthology.org/2020.acl-main.343/), CH_SIMSV2, BRCA, MM-IMDB, datasets link are here 
+[CMU-MOSEI](https://aclanthology.org/P18-1208.pdf), [CH_SIMS](https://aclanthology.org/2020.acl-main.343/), CH_SIMSV2, BRCA, MM-IMDB, datasets link are here .
 
 ## Environment
 ```
