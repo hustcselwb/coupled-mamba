@@ -1,0 +1,6 @@
+torch
+packaging
+ninja
+einops
+triton
+transformers
