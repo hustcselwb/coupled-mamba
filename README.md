@@ -17,7 +17,7 @@ Extensive experiments on datasets CMU-MOSEI, CH-SIMS, and CH-SIMSV2 show that ou
 We will promptly update with the latest paper link after submitting the camera-ready version of the [paper](https://arxiv.org/abs/2405.18014).
 
 ## Code Coming Soon
-We will release the code soon.Including the model,dataset,eval code. 
+We have updated the code, but due to a long time and personal affairs, we have not had time to organize the code recently. If there are any problems with the code, please leave a message in the issue and I will help solve it when I have time.
 
 ## Dataset
 [CMU-MOSEI](https://aclanthology.org/P18-1208.pdf), [CH_SIMS](https://aclanthology.org/2020.acl-main.343/), CH_SIMSV2, BRCA, MM-IMDB
