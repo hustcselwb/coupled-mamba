@@ -432,3 +432,147 @@ class Mamba(nn.Module):
                 conv_state.zero_()
                 ssm_state.zero_()
         return conv_state, ssm_state
+
+import torch
+import torch.nn as nn
+from functools import partial
+
+class MultiMamba(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        n_layer: int,
+        audio_dim: int,
+        vision_dim: int,
+        text_dim: int,
+        ssm_cfg=None,
+        norm_epsilon: float = 1e-5,
+        rms_norm: bool = False,
+        initializer_cfg=None,
+        fused_add_norm=False,
+        residual_in_fp32=False,
+        device=None,
+        dtype=None,
+    ) -> None:
+        super().__init__()
+        factory_kwargs = {"device": device, "dtype": dtype}
+        
+        # Configuration parameters
+        self.residual_in_fp32 = residual_in_fp32
+        self.fused_add_norm = fused_add_norm
+        self.n_layer = n_layer
+        
+        # Input preprocessing layers
+        self.resnet_audio = resnet_audio()
+        self.resnet_vision = resnet_vision()
+        self.resnet_text = resnet_text()
+        
+        # Modality projection layers
+        self.audio_projection = FusionNet(dim=audio_dim).to(device)
+        self.text_projection = FusionNet(dim=text_dim).to(device)
+        self.vision_projection = FusionNet(dim=vision_dim).to(device)
+        
+        # Output layer
+        self.regression_head = RegressionHead().to(device)
+        
+        # Core network - three parallel Mamba branches
+        self.mamba_branches = nn.ModuleList([
+            nn.ModuleList([
+                create_block(
+                    d_model,
+                    ssm_cfg=ssm_cfg,
+                    norm_epsilon=norm_epsilon,
+                    rms_norm=rms_norm,
+                    residual_in_fp32=residual_in_fp32,
+                    fused_add_norm=fused_add_norm,
+                    layer_idx=i,
+                    **factory_kwargs
+                ) for i in range(n_layer)
+            ]) for _ in range(3)  # Three modality branches
+        ])
+        
+        # Normalization layer
+        norm_class = nn.LayerNorm if not rms_norm else RMSNorm
+        self.norm_f = norm_class(d_model, eps=norm_epsilon, **factory_kwargs)
+        
+        # Learnable fusion weights
+        self.weight_audio = nn.Parameter(torch.ones(1))
+        self.weight_visual = nn.Parameter(torch.ones(1))
+        self.weight_text = nn.Parameter(torch.ones(1))
+        
+        # Initialize weights
+        for branch in self.mamba_branches:
+            branch.apply(partial(
+                _init_weights,
+                n_layer=n_layer,
+                **(initializer_cfg or {})
+            ))
+
+    @staticmethod
+    def allocate_inference_cache(branches, batch_size, max_seqlen, dtype=None, **kwargs):
+        """Allocate inference cache for all branches"""
+        return {
+            branch_idx: {
+                block_idx: block.allocate_inference_cache(batch_size, max_seqlen, dtype=dtype, **kwargs)
+                for block_idx, block in enumerate(block_list)
+            } for branch_idx, block_list in enumerate(branches)
+        }
+
+    def forward(self, input_audio, input_vision, input_text):
+        # Feature projection
+        audio_emb = self.audio_projection(input_audio)
+        vision_emb = self.vision_projection(input_vision)
+        text_emb = self.text_projection(input_text)
+        
+        embeddings = [audio_emb, vision_emb, text_emb]
+        
+        # Layer-wise processing
+        for layer_idx in range(self.n_layer):
+            branch_outputs = []
+            
+            # Independent branch processing
+            for branch_idx, branch_layers in enumerate(self.mamba_branches):
+                hidden_state = branch_layers[layer_idx](embeddings[branch_idx])
+                normalized_state = self.norm_f(hidden_state[0].to(self.norm_f.weight.dtype))
+                branch_outputs.append(normalized_state + embeddings[branch_idx])
+            
+            # Final layer processing
+            if layer_idx == self.n_layer - 1:
+                pooled_outputs = []
+                for output in branch_outputs:
+                    pooled, _ = torch.max(output, dim=1)
+                    pooled_outputs.append(pooled)
+                
+                # Weighted fusion
+                weights = torch.stack([
+                    self.weight_audio,
+                    self.weight_visual,
+                    self.weight_text
+                ])
+                norm_weights = torch.softmax(weights, dim=0)
+                
+                fused_embedding = sum(
+                    w * output for w, output in zip(norm_weights, pooled_outputs)
+                )
+                break
+            
+            # Cross-modal enhancement
+            audio_enhanced = self.resnet_audio(
+                torch.cat([branch_outputs[1], branch_outputs[2]], dim=-1)
+            )
+            vision_enhanced = self.resnet_vision(
+                torch.cat([branch_outputs[0], branch_outputs[2]], dim=-1)
+            )
+            text_enhanced = self.resnet_text(
+                torch.cat([branch_outputs[0], branch_outputs[1]], dim=-1)
+            )
+            
+            # Update embeddings
+            embeddings = [
+                branch_outputs[0] + audio_enhanced,
+                branch_outputs[1] + vision_enhanced,
+                branch_outputs[2] + text_enhanced
+            ]
+        
+        # Final prediction
+        return self.regression_head(fused_embedding)
