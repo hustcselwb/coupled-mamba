@@ -437,7 +437,7 @@ import torch
 import torch.nn as nn
 from functools import partial
 
-class MultiMamba(nn.Module):
+class CoupledMamba(nn.Module):
     def __init__(
         self,
         d_model: int,
