@@ -166,6 +166,25 @@ class RegressionHead(nn.Module):
         x = torch.relu(x)
         x = self.out_proj(x)
         return x
+
+class FusionNet(nn.Module):
+    def __init__(self,dim):
+        super(FusionNet, self).__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(dim, 256),
+            nn.LayerNorm(256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.LayerNorm(128)
+        )
+
+    def forward(self, x):
+        batch_size, seq_len, feature_dim  = x.shape
+        x = x.view(batch_size * seq_len , -1)  
+        x = self.fc(x)
+        return x.view(batch_size, seq_len, -1) 
+
+
 class Mamba(nn.Module):
     def __init__(
         self,
@@ -432,7 +451,44 @@ class Mamba(nn.Module):
                 conv_state.zero_()
                 ssm_state.zero_()
         return conv_state, ssm_state
+class resnet_audio(nn.Module):
+    """Head for sentence-level classification tasks."""
 
+    def __init__(self):
+        super(resnet_audio, self).__init__()
+        self.dense = nn.Linear(256, 128)
+        self.out_proj = nn.Linear(192, 128)
+
+    def forward(self, features, **kwargs):
+        x = features
+        x = self.dense(x)
+        return x
+
+class resnet_vision(nn.Module):
+    """Head for sentence-level classification tasks."""
+
+    def __init__(self):
+        super(resnet_vision, self).__init__()
+        self.dense = nn.Linear(256, 128)
+        self.out_proj = nn.Linear(192, 128)
+
+    def forward(self, features, **kwargs):
+        x = features
+        x = self.dense(x)
+        return x
+class resnet_text(nn.Module):
+    """Head for sentence-level classification tasks."""
+
+    def __init__(self):
+        super(resnet_text, self).__init__()
+        self.dense = nn.Linear(256, 128)
+        self.out_proj = nn.Linear(192, 128)
+
+    def forward(self, features, **kwargs):
+        x = features
+        x = self.dense(x)
+        return x
+        
 import torch
 import torch.nn as nn
 from functools import partial
