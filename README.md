@@ -30,9 +30,11 @@ pip install mamba-ssm
 ## Citation
 ```
 @article{li2024coupled,
-  title={Coupled Mamba: Enhanced Multi-modal Fusion with Coupled State Space Model},
-  author={Li, Wenbing and Zhou, Hang and Song, Zikai and Yang, Wei},
-  journal={arXiv preprint arXiv:2405.18014},
+  title={Coupled mamba: Enhanced multimodal fusion with coupled state space model},
+  author={Li, Wenbing and Zhou, Hang and Yu, Junqing and Song, Zikai and Yang, Wei},
+  journal={Advances in Neural Information Processing Systems},
+  volume={37},
+  pages={59808--59832},
   year={2024}
 }
 ```
